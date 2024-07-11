@@ -1,0 +1,37 @@
+body {
+  padding:10px;
+  font-family:Helvetica, Arial, sans-serif
+}
+
+.body-wrapper {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/*
+input[type=textarea] {
+  width:100%;
+  min-height:100px;
+}
+*/
+
+#duals-output {
+  width:100%;
+  overflow: scroll;
+}
+
+@media (min-width: 576px) {
+.jumbotron {
+    padding: 2rem 2rem;
+}
+}
+
+table.dataTable tbody th, table.dataTable tbody td {
+  padding: .3rem;
+
+}
+
+#duals-output table {
+  font-size: .8rem;
+}
