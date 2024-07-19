@@ -1,4 +1,126 @@
-function fileInfo(e) {
+let fileContent = '';
+
+document.getElementById('fileInput').addEventListener('change', function (event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      fileContent = e.target.result;
+    };
+    reader.readAsText(file);
+  }
+});
+
+function processFile() {
+  if (!fileContent) {
+    alert('Please upload a CSV file first.');
+    return;
+  }
+
+  const records = Papa.parse(fileContent, { header: true, skipEmptyLines: true }).data;
+  const recordsByEmail = groupBy(records, 'StudentPreferredEmail');
+  const [startOutput, stopOutput] = processRecords(recordsByEmail);
+
+  downloadCSV(startOutput, 'start_nudge.csv');
+  downloadCSV(stopOutput, 'stop_nudge.csv');
+}
+
+document.getElementById('the_form_submit').addEventListener('click', function (event) {
+  processFile();
+});
+
+
+function groupBy(array, key) {
+  return array.reduce((result, currentValue) => {
+    (result[currentValue[key]] = result[currentValue[key]] || []).push(currentValue);
+    return result;
+  }, {});
+}
+
+function processRecords(recordsByEmail) {
+  const startOutput = [];
+  const stopOutput = [];
+
+  const headers = Object.keys(recordsByEmail[Object.keys(recordsByEmail)[0]][0]);
+  startOutput.push([...headers, 'START', 'STOP', 'MULTIPLE']);
+  stopOutput.push([...headers, 'START', 'STOP', 'MULTIPLE']);
+
+  Object.keys(recordsByEmail).forEach(email => {
+    const recs = recordsByEmail[email];
+    const multiple = recs.length > 1;
+    const stopping = isStopping(recs) || !isStarting(recs);
+    const starting = isStarting(recs) && !stopping;
+    const stopFlag = stopping ? 'Y' : 'N';
+    const startFlag = starting ? 'Y' : 'N';
+    const multipleFlag = multiple ? 'Y' : 'N';
+
+    if (multiple) {
+      const correctedRecord = { ...recs[0], 'Location': '', 'CourseCode': '', 'CourseVersion': '', 'CourseTitle': '', 'AttendanceMode': '', 'StudyMode': '', 'AssignedUser': '', 'ApplicationOnHold': '' };
+      const recordValues = Object.values(correctedRecord).concat([startFlag, stopFlag, multipleFlag]);
+      if (starting) startOutput.push(recordValues);
+      if (stopping) stopOutput.push(recordValues);
+    } else {
+      recs.forEach(record => {
+        const recordValues = Object.values(record).concat([startFlag, stopFlag, multipleFlag]);
+        if (starting) startOutput.push(recordValues);
+        if (stopping) stopOutput.push(recordValues);
+      });
+    }
+  });
+
+  return [startOutput, stopOutput];
+}
+
+function isStaffHold(records) {
+  const staffHoldStatuses = ['Offered', 'Perform Assessment', 'Triage', 'Potential Duplicate'];
+  return records.some(record => record.ApplicationStatusCode === 'ENTERED' && staffHoldStatuses.includes(record.WorkflowStatus));
+}
+
+function isStarting(records) {
+  const staffHold = isStaffHold(records);
+  const match = records.some(record =>
+    ['Online Application', 'Staff Commenced - Student Progressed'].includes(record.SubmissionMethod) &&
+    record.ApplicationStatusCode === 'ENTERED' &&
+    record.WorkflowStatus === 'Enter Application' &&
+    record.WorkflowStage === 'INCOMPLETE' &&
+    record.StuCommSuppressFg === 'N' && // NOTE: TO BE UPDATED
+    record.ApplicationOnHold === 'N' &&
+    !staffHold
+  );
+  const excluded = records.some(record => record.ApplicationStatusCode === 'COMPLETE');
+  return match && !excluded;
+}
+
+function isStopping(records) {
+  const staffHold = isStaffHold(records);
+  const starting = isStarting(records);
+  return records.some(record =>
+    !starting &&
+    (staffHold ||
+      (record.ApplicationStatusCode === 'ENTERED' && ['Cancelled', 'Withdrawn'].includes(record.WorkflowStatus)) ||
+      ['CANCELLED', 'COMPLETE'].includes(record.ApplicationStatusCode))
+  );
+}
+
+function downloadCSV(data, filename) {
+  const csvContent = Papa.unparse(data);
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+
+
+
+
+
+/*function fileInfo(e) {
   var file = e.target.files[0];
   if (file.name.split(".")[1].toUpperCase() != "CSV") {
     alert('Invalid csv file !');
@@ -91,7 +213,6 @@ document.getElementById('the_form_submit').addEventListener('click', () => {
   });
 });
 
-/**************** auto select */
 function SelectText(element) {
   var text = element,
       range,
@@ -111,4 +232,4 @@ function SelectText(element) {
 
 document.querySelector('.autoselect').addEventListener('click', function() {
   SelectText(this);
-});
+});*/

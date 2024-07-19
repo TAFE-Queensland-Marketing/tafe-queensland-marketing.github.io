@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSV Processor</title>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/libphonenumber-js/1.9.27/libphonenumber-js.min.js"></script>
+</head>
+<body>
+  <h1>Version 1</h1>
+  <input type="file" id="fileInput">
+  <button onclick="processFile()">Process File</button>
+  <script>
+    async function processFile() {
+      const fileInput = document.getElementById('fileInput');
+      if (fileInput.files.length === 0) {
+        alert('Please select a file');
+        return;
+      }
+      const file = fileInput.files[0];
+
+      const readFile = (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (event) => resolve(event.target.result);
+          reader.onerror = (error) => reject(error);
+          reader.readAsText(file);
+        });
+      };
+
+      const csvData = await readFile(file);
+
+      Papa.parse(csvData, {
+        header: true,
+        complete: (results) => {
+          const records = results.data.filter(record => record.StudentPreferredEmail !== '');
+          console.log('Number of records with email addresses: ', records.length);
+
+          const phoneUtil = libphonenumber.parsePhoneNumberFromString;
+
+          const recordsByEmail = {};
+
+          records.forEach((record) => {
+            if (record.StudentPreferredPhone) {
+              try {
+                let number = phoneUtil(record.StudentPreferredPhone, 'AU');
+                if (number.isValid()) {
+                  record.StudentPreferredPhone = number.formatInternational().replace('+61', '61');
+                }
+              } catch (e) {
+                console.log('Could not fix phone number (it might be invalid): ', record.StudentPreferredPhone);
+              }
+            }
+
+            if (recordsByEmail[record.StudentPreferredEmail]) {
+              recordsByEmail[record.StudentPreferredEmail].push(record);
+            } else {
+              recordsByEmail[record.StudentPreferredEmail] = [record];
+            }
+          });
+
+          const isStaffHold = (records) => {
+            const staffHoldStatuses = ['Offered', 'Perform Assessment', 'Triage', 'Potential Duplicate'];
+            return records.some(record => record.ApplicationStatusCode === 'ENTERED' && staffHoldStatuses.includes(record.WorkflowStatus));
+          };
+
+          const isStarting = (records) => {
+            const staffHold = isStaffHold(records);
+            const match = records.some(record =>
+              (record.SubmissionMethod === 'Online Application' || record.SubmissionMethod === 'Staff Commenced - Student Progressed')
+              && record.ApplicationStatusCode === 'ENTERED'
+              && record.WorkflowStatus === 'Enter Application'
+              && record.WorkflowStage === 'INCOMPLETE'
+              && record.StuCommSuppressFg === 'N'
+              && record.ApplicationOnHold === 'N'
+              && !staffHold
+            );
+            const excluded = records.some(record => record.ApplicationStatusCode === 'COMPLETE');
+            return match && !excluded;
+          };
+
+          const isStopping = (records) => {
+            const staffHold = isStaffHold(records);
+            const starting = isStarting(records);
+            return !starting && (
+              staffHold ||
+              records.some(record =>
+                (record.ApplicationStatusCode === 'ENTERED' && (record.WorkflowStatus === 'Cancelled' || record.WorkflowStatus === 'Withdrawn')) ||
+                record.ApplicationStatusCode === 'CANCELLED' ||
+                record.ApplicationStatusCode === 'COMPLETE'
+              )
+            );
+          };
+
+          const start_output = [Object.keys(records[0]).concat(['START', 'STOP', 'MULTIPLE'])];
+          const stop_output = [Object.keys(records[0]).concat(['START', 'STOP', 'MULTIPLE'])];
+
+          Object.keys(recordsByEmail).forEach((key) => {
+            const records = recordsByEmail[key];
+            const multiple = records.length > 1;
+            const stopping = isStopping(records);
+            const starting = isStarting(records) && !stopping;
+            const stopFlag = stopping ? 'Y' : 'N';
+            const startFlag = starting ? 'Y' : 'N';
+            const multipleFlag = multiple ? 'Y' : 'N';
+
+            const escapeCsvValue = (value) => {
+              if (typeof value === 'string' && (value.includes(',') || value.includes('\n') || value.includes('"'))) {
+                return `"${value.replace(/"/g, '""')}"`;
+              }
+              return value;
+            };
+
+            if (multiple) {
+              const correctedRecord = { ...records[0], Location: '', CourseCode: '', CourseVersion: '', CourseTitle: '', AttendanceMode: '', StudyMode: '', AssignedUser: '', ApplicationOnHold: '' };
+              const singleRecord = [...Object.values(correctedRecord).map(escapeCsvValue), startFlag, stopFlag, multipleFlag];
+              if (starting) start_output.push(singleRecord);
+              if (stopping) stop_output.push(singleRecord);
+            } else {
+              records.forEach((record) => {
+                const singleRecord = [...Object.values(record).map(escapeCsvValue), startFlag, stopFlag, multipleFlag];
+                if (starting) start_output.push(singleRecord);
+                if (stopping) stop_output.push(singleRecord);
+              });
+            }
+          });
+
+          console.log("Number of records qualified to start nudge: " + (start_output.length - 1));
+          console.log("Number of records that should be removed from nudge: " + (stop_output.length - 1));
+
+          const downloadCSV = (filename, data) => {
+            const csvContent = data.map(e => e.join(",")).join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          };
+
+          downloadCSV('start_nudge.csv', start_output);
+          downloadCSV('stop_nudge.csv', stop_output);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
