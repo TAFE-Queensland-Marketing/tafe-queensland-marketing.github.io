@@ -83,7 +83,9 @@ function isStarting(records) {
     record.ApplicationStatusCode === 'ENTERED' &&
     record.WorkflowStatus === 'Enter Application' &&
     record.WorkflowStage === 'INCOMPLETE' &&
+    /* ************************ */
     record.StuCommSuppressFg === 'N' && // NOTE: TO BE UPDATED
+    /* ************************ */
     record.ApplicationOnHold === 'N' &&
     !staffHold
   );
