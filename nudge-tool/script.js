@@ -37,6 +37,28 @@ function groupBy(array, key) {
   }, {});
 }
 
+/*function filterArrayByProperty(array, property, value) {
+  return array.filter(item => item[property] !== value);
+}*/
+
+// Function to parse the date string in the format 'd/m/yyyy hh:mm'
+function parseDateString(dateString) {
+  const [datePart, timePart] = dateString.split(' ');
+  const [day, month, year] = datePart.split('/').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  return new Date(year, month - 1, day, hours, minutes);
+}
+
+// Function to sort the array by ApplicationLastModifiedDateTime
+function sortByDateProperty(array, property) {
+  return array.sort((a, b) => {
+      const dateA = parseDateString(a[property]);
+      const dateB = parseDateString(b[property]);
+      return dateB - dateA;
+  });
+}
+
 function processRecords(recordsByEmail) {
   const startOutput = [];
   const stopOutput = [];
@@ -48,19 +70,47 @@ function processRecords(recordsByEmail) {
   Object.keys(recordsByEmail).forEach(email => {
     const recs = recordsByEmail[email];
     const multiple = recs.length > 1;
-    const stopping = isStopping(recs) || !isStarting(recs);
-    const starting = isStarting(recs) && !stopping;
+    let stopping = isStopping(recs) || !isStarting(recs);
+    let starting = isStarting(recs) && !stopping;
     const stopFlag = stopping ? 'Y' : 'N';
     const startFlag = starting ? 'Y' : 'N';
     const multipleFlag = multiple ? 'Y' : 'N';
 
+    recs.forEach(record => {
+      // Fix mobile numbers
+      if (record.StudentPreferredPhone && record.StudentPreferredPhone !== '') {
+        try {
+          const phoneNumber = libphonenumber.parsePhoneNumber(record.StudentPreferredPhone, 'AU');
+          let formattedNumber = phoneNumber.format('E.164');
+          if (formattedNumber.startsWith('+61')) {
+            formattedNumber = formattedNumber.replace('+61', '61');
+          }
+          record.StudentPreferredPhone = formattedNumber;
+        } catch (e) {
+          console.log('Could not fix phone number (it might be invalid): ', record.StudentPreferredPhone);
+        }
+      }
+    });
+
+    // sort application records by date, so only the most recently modified application is considered 
+    const sortedRecs = sortByDateProperty(recs, 'ApplicationLastModifiedDateTime');
+
+    // get the first item in the array that is not cancelled
+    const chosenRec = sortedRecs.find((record) => record.ApplicationStatusCode === 'ENTERED' && record.WorkflowStatus === 'Enter Application') || sortedRecs[0];
+
+    // if the most recent is TOL, it will be in the stop list
+    if (chosenRec.RegionCode === 'TQTOL') {
+      stopping = true;
+      starting = false;
+    }
+
     if (multiple) {
-      const correctedRecord = { ...recs[0], 'Location': '', 'CourseCode': '', 'CourseVersion': '', 'CourseTitle': '', 'AttendanceMode': '', 'StudyMode': '', 'AssignedUser': '', 'ApplicationOnHold': '' };
+      const correctedRecord = { ...chosenRec, 'Location': '', 'CourseCode': '', 'CourseVersion': '', 'CourseTitle': '', 'AttendanceMode': '', 'StudyMode': '', 'AssignedUser': '', 'ApplicationOnHold': '' };
       const recordValues = Object.values(correctedRecord).concat([startFlag, stopFlag, multipleFlag]);
       if (starting) startOutput.push(recordValues);
       if (stopping) stopOutput.push(recordValues);
     } else {
-      recs.forEach(record => {
+      sortedRecs.forEach(record => {
         const recordValues = Object.values(record).concat([startFlag, stopFlag, multipleFlag]);
         if (starting) startOutput.push(recordValues);
         if (stopping) stopOutput.push(recordValues);
@@ -83,6 +133,7 @@ function isStarting(records) {
     record.ApplicationStatusCode === 'ENTERED' &&
     record.WorkflowStatus === 'Enter Application' &&
     record.WorkflowStage === 'INCOMPLETE' &&
+    // record.RegionCode !== 'TQTOL' && 
     /* ************************ */
     record.StuCommSuppressFg === 'N' && // NOTE: TO BE UPDATED
     /* ************************ */
@@ -116,8 +167,6 @@ function downloadCSV(data, filename) {
   link.click();
   document.body.removeChild(link);
 }
-
-
 
 
 
