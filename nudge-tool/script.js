@@ -129,6 +129,7 @@ function isStaffHold(records) {
 function isStarting(records) {
   const staffHold = isStaffHold(records);
   const match = records.some(record =>
+    
     ['Online Application', 'Staff Commenced - Student Progressed'].includes(record.SubmissionMethod) &&
     record.ApplicationStatusCode === 'ENTERED' &&
     record.WorkflowStatus === 'Enter Application' &&
@@ -137,10 +138,11 @@ function isStarting(records) {
     /* ************************ */
     record.StuCommSuppressFg === 'N' && // NOTE: TO BE UPDATED
     /* ************************ */
-    record.ApplicationOnHold === 'N' &&
+    record.ApplicationOnHold !== 'Y' &&
     !staffHold
   );
   const excluded = records.some(record => record.ApplicationStatusCode === 'COMPLETE');
+  console.log(records);
   return match && !excluded;
 }
 
