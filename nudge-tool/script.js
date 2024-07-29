@@ -37,10 +37,6 @@ function groupBy(array, key) {
   }, {});
 }
 
-/*function filterArrayByProperty(array, property, value) {
-  return array.filter(item => item[property] !== value);
-}*/
-
 // Function to parse the date string in the format 'd/m/yyyy hh:mm'
 function parseDateString(dateString) {
   const [datePart, timePart] = dateString.split(' ');
@@ -134,9 +130,8 @@ function isStarting(records) {
     record.ApplicationStatusCode === 'ENTERED' &&
     record.WorkflowStatus === 'Enter Application' &&
     record.WorkflowStage === 'INCOMPLETE' &&
-    // record.RegionCode !== 'TQTOL' && 
     /* ************************ */
-    record.StuCommSuppressFg === 'N' && // NOTE: TO BE UPDATED
+    ( record.StuCommSuppressFg === 'N' || record.StuCommSuppressFg !== 'Y' ) && // NOTE: TO BE UPDATED
     /* ************************ */
     record.ApplicationOnHold !== 'Y' &&
     !staffHold
