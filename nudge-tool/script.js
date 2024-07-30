@@ -130,9 +130,7 @@ function isStarting(records) {
     record.ApplicationStatusCode === 'ENTERED' &&
     record.WorkflowStatus === 'Enter Application' &&
     record.WorkflowStage === 'INCOMPLETE' &&
-    /* ************************ */
-    ( record.StuCommSuppressFg === 'N' || record.StuCommSuppressFg !== 'Y' ) && // NOTE: TO BE UPDATED
-    /* ************************ */
+    ( record.StuCommSuppressFg === 'N' || record.OptOutOfSurveys !== 'Y' ) &&
     record.ApplicationOnHold !== 'Y' &&
     !staffHold
   );
