@@ -1,0 +1,40 @@
+name: Build and Deploy React App
+
+on:
+  push:
+    branches:
+      - main   # Trigger the action on changes to the main branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Step 2: Set up Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'  # Use the Node.js version you prefer
+
+    # Step 3: Install dependencies
+    - name: Install dependencies
+      run: |
+        npm install
+
+    # Step 4: Build the React app
+    - name: Build React app
+      run: |
+        npm run build
+
+    # Step 5: Deploy to GitHub Pages
+    - name: Deploy to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        branch: gh-pages        # Deploy to the gh-pages branch
+        folder: build           # Folder to deploy (this is where the production build is located)
+        token: ${{ secrets.GITHUB_TOKEN }}  # Token used to authenticate and deploy
+
