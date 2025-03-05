@@ -31,7 +31,7 @@ jobs:
     # Step 5: Copy build files to a specific directory in the repo
     - name: Move build files to GitHub Pages directory
       run: |
-        cp -r build/* docs/  # Copy React build output
+        cp -r build/* docs/react  # Copy React build output
         touch docs/.nojekyll  # Disable Jekyll
 
     # Step 6: Commit and push the built files
