@@ -1,16 +1,16 @@
 {
   "files": {
     "main.css": "/pfx-converter/static/css/main.f855e6bc.css",
-    "main.js": "/pfx-converter/static/js/main.7749162a.js",
-    "static/js/453.b84da161.chunk.js": "/pfx-converter/static/js/453.b84da161.chunk.js",
+    "main.js": "/pfx-converter/static/js/main.bfac9462.js",
+    "static/js/453.306ad23b.chunk.js": "/pfx-converter/static/js/453.306ad23b.chunk.js",
     "static/media/logo.svg": "/pfx-converter/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
     "index.html": "/pfx-converter/index.html",
     "main.f855e6bc.css.map": "/pfx-converter/static/css/main.f855e6bc.css.map",
-    "main.7749162a.js.map": "/pfx-converter/static/js/main.7749162a.js.map",
-    "453.b84da161.chunk.js.map": "/pfx-converter/static/js/453.b84da161.chunk.js.map"
+    "main.bfac9462.js.map": "/pfx-converter/static/js/main.bfac9462.js.map",
+    "453.306ad23b.chunk.js.map": "/pfx-converter/static/js/453.306ad23b.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.f855e6bc.css",
-    "static/js/main.7749162a.js"
+    "static/js/main.bfac9462.js"
   ]
 }
