@@ -1,9 +1,9 @@
-name: Build and Deploy React App
+name: Build React and Deploy Static Files
 
 on:
   push:
     branches:
-      - main   # Trigger the action on changes to the main branch
+      - main  # Runs on pushes to the main branch
 
 jobs:
   build:
@@ -18,23 +18,27 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: '14'  # Use the Node.js version you prefer
+        node-version: '14'  # Use a version compatible with your project
 
     # Step 3: Install dependencies
     - name: Install dependencies
-      run: |
-        npm install
+      run: npm install
 
-    # Step 4: Build the React app
+    # Step 4: Build React app
     - name: Build React app
+      run: npm run build
+
+    # Step 5: Copy build files to a specific directory in the repo
+    - name: Move build files to the static site directory
       run: |
-        npm run build
+        mkdir -p _site/react  # Create the directory if it doesn't exist
+        cp -r build/* _site/react  # Copy React build output
 
-    # Step 5: Deploy to GitHub Pages
-    - name: Deploy to GitHub Pages
-      uses: JamesIves/github-pages-deploy-action@v4
-      with:
-        branch: gh-pages        # Deploy to the gh-pages branch
-        folder: build           # Folder to deploy (this is where the production build is located)
-        token: ${{ secrets.GITHUB_TOKEN }}  # Token used to authenticate and deploy
-
+    # Step 6: Commit and push the built files
+    - name: Commit and push changes
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add _site
+        git commit -m "Deploy React build to _site/react" || echo "No changes to commit"
+        git push
