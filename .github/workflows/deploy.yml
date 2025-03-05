@@ -29,10 +29,12 @@ jobs:
       run: npm run build
 
     # Step 5: Copy build files to a specific directory in the repo
-    - name: Move build files to the static site directory
+    - name: Move build files to GitHub Pages directory
       run: |
-        mkdir -p docs/react  # Create the directory if it doesn't exist
+        mkdir -p docs/react  # Ensure the directory exists
         cp -r build/* docs/react  # Copy React build output
+        touch docs/.nojekyll  # Prevent Jekyll processing
+
 
     # Step 6: Commit and push the built files
     - name: Commit and push changes
