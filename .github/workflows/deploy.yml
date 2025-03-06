@@ -38,10 +38,14 @@ jobs:
         touch docs/.nojekyll  # Disable Jekyll
 
     # Step 6: Commit and push the built files
-    - name: Commit and push changes
+    - name: Configure GitHub authentication
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git add docs
-        git commit -m "Deploy React build to docs/react" || echo "No changes to commit"
-        git push
+        git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/${{ github.repository }}.git
+
+    - name: Commit and push changes
+      run: |
+        git add -A
+        git commit -m "Deploy React build to docs/react"
+        git push origin main
