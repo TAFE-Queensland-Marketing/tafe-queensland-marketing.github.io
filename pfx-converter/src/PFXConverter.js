@@ -63,10 +63,21 @@ export default function PFXConverter() {
 
   return (
     <div className="p-4 max-w-md mx-auto text-center">
-      <h1 className="text-xl font-bold">PFX to AEM Converter</h1>
-      <input type="file" onChange={handleFileChange} accept=".pfx" className="block my-2" />
-      <input type="password" value={password} onChange={handlePasswordChange} placeholder="Enter password" className="block my-2 p-2 border" />
-      <button onClick={handleConvert} className="bg-blue-500 text-white px-4 py-2 rounded">Convert</button>
+      <h1 className="text-xl font-bold">PFX converter</h1>
+      <div class="form-container">
+      <p>This tool will split a pfx file into separate certificate, private key and chain files.</p>
+        <div>
+          <label for="upload">Upload the PFX file for conversion: </label>
+          <input id="uplaod" type="file" onChange={handleFileChange} accept=".pfx" className="block my-2" />
+        </div>
+        <div>
+          <label for="password">Enter the certificate password: </label>
+          <input id="password"type="password" value={password} onChange={handlePasswordChange} placeholder="Password" className="block my-2 p-2 border" />
+        </div>
+        <div class="center">
+          <button onClick={handleConvert} className="bg-blue-500 text-white px-4 py-2 rounded">Convert</button>
+        </div>
+      </div>
     </div>
   );
 }

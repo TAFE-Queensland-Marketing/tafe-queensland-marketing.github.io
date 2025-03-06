@@ -34,9 +34,9 @@ jobs:
     # Step 5: Copy build files to a specific directory in the repo
     - name: Move build files to GitHub Pages directory
       run: |
-        mkdir -p docs/react  # Ensure the folder exists
-        cp -r pfx-converter/build/* docs/react  # Copy React build output
-        touch docs/.nojekyll  # Disable Jekyll 
+        mkdir -p pfx  # Ensure the folder exists
+        cp -r pfx-converter/build/* pfx  # Copy React build output
+        touch pfx/.nojekyll  # Disable Jekyll 
 
     # Step 6: Commit and push the built files
     - name: Configure GitHub authentication
@@ -48,5 +48,5 @@ jobs:
     - name: Commit and push changes
       run: |
         git add -A
-        git commit -m "Deploy React build to docs/react"
+        git commit -m "Deploy React build to pfx"
         git push origin main
